@@ -29,10 +29,17 @@ import struct
 from ctypes import addressof, create_string_buffer, sizeof, string_at
 from fcntl import ioctl
 from spi_ctypes import *
-import time
+import sys, time
 import hyperion
 
 nleds=8
+if (len(sys.argv) > 1):
+  try:
+    nleds = int(sys.argv[1])
+  except:
+    print "Need a numeric parameter: number of LEDs"
+
+print "nleds=%d" % nleds
 
 class spibus():
 	fd=None
@@ -104,7 +111,7 @@ rgb = [
 	  [ 33,  0,  0],
 	  [ 0 , 33,  0],
 	  [ 33,  0, 33],
-	  [ 33,  0,  0],
+	  [ 33,  0,  0]
 	],
 	[
 	  [ 0,  1,  0],
@@ -114,7 +121,7 @@ rgb = [
 	  [ 0,  0,  0],
 	  [ 0, 66,  0],
 	  [ 0,  0, 66],
-	  [ 0,  0,  0],
+	  [ 0,  0,  0]
 	],
 	[
 	  [ 1 ,  0,  0],
@@ -124,7 +131,7 @@ rgb = [
 	  [ 100, 0,  0],
 	  [ 40 , 0,  0],
 	  [ 10,  0,  0],
-	  [ 1,   0,  0],
+	  [ 1,   0,  0]
 	],
 	[
 	  [ 0, 0,  1],
@@ -134,7 +141,7 @@ rgb = [
 	  [ 1, 1,  0],
 	  [ 0, 1,  0],
 	  [ 0, 1,  1],
-	  [ 0, 0,  1],
+	  [ 0, 0,  1]
 	],
 	[
 	  [ 0 ,  1,   0],
@@ -144,7 +151,7 @@ rgb = [
 	  [ 255, 0,   0],
 	  [ 0 , 255,  0],
 	  [ 255, 0, 255],
-	  [ 255, 0,   0],
+	  [ 255, 0,   0]
 	]
 ]
 
