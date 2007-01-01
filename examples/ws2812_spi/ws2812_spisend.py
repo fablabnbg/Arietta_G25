@@ -32,7 +32,7 @@ from spi_ctypes import *
 import sys, time
 import hyperion
 
-nleds=240
+nleds=240		# max 341
 sleeptime=0.1/nleds
 spidev="/dev/spidev32766.1"
 
@@ -204,13 +204,23 @@ while (True):
     if new: blue = new
 
     num = hyp.duration()
+    num = int(num/1000)
+    if num > 341: 
+      print "max nleds = 341"
+      num = 341
     if num and (num != nleds):
-      # nleds = num
+      print "num=", num
+      nleds = num
+      dir = 1
+      x = 1
+      xx = 0
       spibus0 = spibus(spidev,nleds)
       sleeptime = 0.1/nleds
-    else: 
+
+    if not new and not num:
       print hyp.json()
       pattern = (pattern + 1) % len(rgb)
+
   time.sleep(sleeptime)
 
   
