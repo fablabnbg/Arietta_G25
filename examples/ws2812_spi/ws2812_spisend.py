@@ -32,7 +32,8 @@ from spi_ctypes import *
 import sys, time
 import hyperion
 
-nleds=8
+sleeptime=0.001
+nleds=240
 if (len(sys.argv) > 1):
   try:
     nleds = int(sys.argv[1])
@@ -75,7 +76,7 @@ def set_led(j, rgb):
   doublebit = [ 
     # spi sends the msb first, and we invert all
     0x77, 	# 111.111.	0 0
-    0x71, 	# 1...1...	0 1
+    0x71, 	# 111.1...	0 1
     0x17, 	# 1...111.	1 0
     0x11, 	# 1...1...	1 1
   ]
@@ -182,7 +183,7 @@ while (True):
     else: 
       print hyp.json()
       pattern = (pattern + 1) % len(rgb)
-  time.sleep(0.01)
+  #time.sleep(sleeptime)
 
   
 #Shows the 2 byte received in full duplex in hex format
