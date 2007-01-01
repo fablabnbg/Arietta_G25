@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# (c) 2014, Juergen Weigert, juewei@fabfolk.com
+# (c) 2014,2015, Juergen Weigert, juewei@fabfolk.com
 # Distribute under GPL-2.0 or ask.
 #
 #
@@ -22,6 +22,10 @@
 # -> click on SPI bus [x] SPI
 # -> [Generate acme-arietta.dtb]
 #
+# CAUTION: it does not work with the stock 3.14.x kernel. 
+#          You need to compile a 3.16.1 kernel, as demonstrated in
+#          http://www.acmesystems.it/compile_linux_3_16
+#
 # Copy the downloaded file to your SDcard, according to the online instructions.
 
 import posix
@@ -32,8 +36,8 @@ from spi_ctypes import *
 import sys, time
 import hyperion
 
-nleds=40		# max 341
-sleeptime=0.1/nleds
+nleds=50		# max 341
+sleeptime=0.0001/nleds
 spidev="/dev/spidev32766.2"
 
 if (len(sys.argv) > 1):
@@ -44,7 +48,7 @@ if (len(sys.argv) > 1):
 
 print "nleds=%d" % nleds
 
-class spibus():
+class spibus_ws2812():
 	def __init__(self,device,nleds):
 		self.fd=None
 		self.write_buffer=create_string_buffer(nleds*3*4)
@@ -72,39 +76,40 @@ class spibus():
 		self.ioctl_arg.len=len
 		ioctl(self.fd, SPI_IOC_MESSAGE(1),addressof(self.ioctl_arg))
 
+	def set_led(self, j, rgb):
+		doublebit = [ 
+	    		# spi sends the msb first, and we invert all
+	    		0x77, 	# 111.111.	0 0
+	    		0x71, 	# 111.1...	0 1
+	    		0x17, 	# 1...111.	1 0
+	    		0x11, 	# 1...1...	1 1
+	  	]
+
+		# darkest colors
+		# gn = [ 0x77, 0x77, 0x77, 0x71,  0x77, 0x77, 0x77, 0x77,   0x77, 0x77, 0x77, 0x77 ]
+		# rd = [ 0x77, 0x77, 0x77, 0x77,  0x77, 0x77, 0x77, 0x71,   0x77, 0x77, 0x77, 0x77 ]
+		# bl = [ 0x77, 0x77, 0x77, 0x77,  0x77, 0x77, 0x77, 0x77,   0x77, 0x77, 0x77, 0x71 ]
+
+		i = j * 12
+		r,g,b = rgb
+		self.write_buffer[i+ 0] = chr(doublebit[(g>>6) & 3])
+		self.write_buffer[i+ 1] = chr(doublebit[(g>>4) & 3])
+		self.write_buffer[i+ 2] = chr(doublebit[(g>>2) & 3])
+		self.write_buffer[i+ 3] = chr(doublebit[(g>>0) & 3])
+
+		self.write_buffer[i+ 4] = chr(doublebit[(r>>6) & 3])
+		self.write_buffer[i+ 5] = chr(doublebit[(r>>4) & 3])
+		self.write_buffer[i+ 6] = chr(doublebit[(r>>2) & 3])
+		self.write_buffer[i+ 7] = chr(doublebit[(r>>0) & 3])
+
+		self.write_buffer[i+ 8] = chr(doublebit[(b>>6) & 3])
+		self.write_buffer[i+ 9] = chr(doublebit[(b>>4) & 3])
+		self.write_buffer[i+10] = chr(doublebit[(b>>2) & 3])
+		self.write_buffer[i+11] = chr(doublebit[(b>>0) & 3])
+
+
 #Open the SPI bus 0
-spibus0 = spibus(spidev,nleds)
-
-def set_led(j, rgb):
-  doublebit = [ 
-    # spi sends the msb first, and we invert all
-    0x77, 	# 111.111.	0 0
-    0x71, 	# 111.1...	0 1
-    0x17, 	# 1...111.	1 0
-    0x11, 	# 1...1...	1 1
-  ]
-
-  # darkest colors
-  # gn = [ 0x77, 0x77, 0x77, 0x71,  0x77, 0x77, 0x77, 0x77,   0x77, 0x77, 0x77, 0x77 ]
-  # rd = [ 0x77, 0x77, 0x77, 0x77,  0x77, 0x77, 0x77, 0x71,   0x77, 0x77, 0x77, 0x77 ]
-  # bl = [ 0x77, 0x77, 0x77, 0x77,  0x77, 0x77, 0x77, 0x77,   0x77, 0x77, 0x77, 0x71 ]
-
-  i = j * 12
-  r,g,b = rgb
-  spibus0.write_buffer[i+ 0] = chr(doublebit[(g>>6) & 3])
-  spibus0.write_buffer[i+ 1] = chr(doublebit[(g>>4) & 3])
-  spibus0.write_buffer[i+ 2] = chr(doublebit[(g>>2) & 3])
-  spibus0.write_buffer[i+ 3] = chr(doublebit[(g>>0) & 3])
-
-  spibus0.write_buffer[i+ 4] = chr(doublebit[(r>>6) & 3])
-  spibus0.write_buffer[i+ 5] = chr(doublebit[(r>>4) & 3])
-  spibus0.write_buffer[i+ 6] = chr(doublebit[(r>>2) & 3])
-  spibus0.write_buffer[i+ 7] = chr(doublebit[(r>>0) & 3])
-
-  spibus0.write_buffer[i+ 8] = chr(doublebit[(b>>6) & 3])
-  spibus0.write_buffer[i+ 9] = chr(doublebit[(b>>4) & 3])
-  spibus0.write_buffer[i+10] = chr(doublebit[(b>>2) & 3])
-  spibus0.write_buffer[i+11] = chr(doublebit[(b>>0) & 3])
+spi_leds = spibus_ws2812(spidev,nleds)
 
 rgb = [
 	[
@@ -183,7 +188,7 @@ pattern=0
 top = len(rgb[pattern])
 
 for x in range(nleds):
-  set_led(x, rgb[pattern][x%top])
+  spi_leds.set_led(x, rgb[pattern][x%top])
 
 hyp = hyperion.server()
 
@@ -193,14 +198,14 @@ dir=1
 x=1
 xx=0
 while (True):
-  spibus0.send(3*4*nleds)
-  set_led(xx, rgb[pattern][x%top])
+  spi_leds.send(3*4*nleds)
+  spi_leds.set_led(xx, rgb[pattern][x%top])
   if (x <= 0) : dir = 1
   if (x >= nleds-1) : dir = -1
   xx = x
   x += dir
-  set_led(x, blue)
-  print x
+  spi_leds.set_led(x, blue)
+  # print x
   if (hyp.poll()):
     new = hyp.color()
     if new: blue = new
@@ -216,8 +221,8 @@ while (True):
       dir = 1
       x = 1
       xx = 0
-      spibus0 = spibus(spidev,nleds)
-      sleeptime = 0.1/nleds
+      spi_leds = spibus_ws2812(spidev,nleds)
+      # sleeptime = 0.1/nleds
 
     if not new and not num:
       print hyp.json()
