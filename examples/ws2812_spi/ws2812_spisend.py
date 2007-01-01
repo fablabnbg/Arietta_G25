@@ -32,8 +32,10 @@ from spi_ctypes import *
 import sys, time
 import hyperion
 
-sleeptime=0.001
 nleds=240
+sleeptime=0.1/nleds
+spidev="/dev/spidev32766.1"
+
 if (len(sys.argv) > 1):
   try:
     nleds = int(sys.argv[1])
@@ -43,24 +45,24 @@ if (len(sys.argv) > 1):
 print "nleds=%d" % nleds
 
 class spibus():
-	fd=None
-	write_buffer=create_string_buffer(nleds*24)
-	read_buffer=create_string_buffer(nleds*24)
+	def __init__(self,device,nleds):
+		self.fd=None
+		self.write_buffer=create_string_buffer(nleds*3*4)
+		self.read_buffer=create_string_buffer(nleds*3*4)
 
-		# speed_hz=5000000,
-		# speed_hz=2550000,  # 1.6us @ 4bit per bit
-		# speed_hz=3500000,    # 1.2us @ 4bit per bit
-	ioctl_arg = spi_ioc_transfer(
-		tx_buf=addressof(write_buffer),
-		rx_buf=addressof(read_buffer),
-		len=1,
-		delay_usecs=0,
-		speed_hz=3500000,
-		bits_per_word=8,
-		cs_change = 0,
-	)
+			# speed_hz=5000000,
+			# speed_hz=2550000,  # 1.6us @ 4bit per bit
+			# speed_hz=3500000,    # 1.2us @ 4bit per bit
+		self.ioctl_arg = spi_ioc_transfer(
+			tx_buf=addressof(self.write_buffer),
+			rx_buf=addressof(self.read_buffer),
+			len=1,
+			delay_usecs=0,
+			speed_hz=3500000,
+			bits_per_word=8,
+			cs_change = 0,
+		)
 
-	def __init__(self,device):
 		self.fd = posix.open(device, posix.O_RDWR)
 		ioctl(self.fd, SPI_IOC_RD_MODE, " ")
 		ioctl(self.fd, SPI_IOC_WR_MODE, struct.pack('I',0))
@@ -70,7 +72,7 @@ class spibus():
 		ioctl(self.fd, SPI_IOC_MESSAGE(1),addressof(self.ioctl_arg))
 
 #Open the SPI bus 0
-spibus0 = spibus("/dev/spidev32766.1")
+spibus0 = spibus(spidev,nleds)
 
 def set_led(j, rgb):
   doublebit = [ 
@@ -153,6 +155,26 @@ rgb = [
 	  [ 0 , 255,  0],
 	  [ 255, 0, 255],
 	  [ 255, 0,   0]
+	],
+	[
+	  [ 255, 255, 255],
+	  [ 255, 255, 255],
+	  [ 255, 255, 255],
+	  [ 255, 255, 255],
+	  [ 255, 255, 255],
+	  [ 255, 255, 255],
+	  [ 255, 255, 255],
+	  [ 255, 255, 255],
+	],
+	[
+	  [ 255, 25, 255],
+	  [ 255, 25, 255],
+	  [ 255, 25, 255],
+	  [ 255, 25, 255],
+	  [ 255, 25, 255],
+	  [ 255, 25, 255],
+	  [ 255, 25, 255],
+	  [ 255, 25, 255],
 	]
 ]
 
@@ -180,10 +202,16 @@ while (True):
   if (hyp.poll()):
     new = hyp.color()
     if new: blue = new
+
+    num = hyp.duration()
+    if num and (num != nleds):
+      # nleds = num
+      spibus0 = spibus(spidev,nleds)
+      sleeptime = 0.1/nleds
     else: 
       print hyp.json()
       pattern = (pattern + 1) % len(rgb)
-  #time.sleep(sleeptime)
+  time.sleep(sleeptime)
 
   
 #Shows the 2 byte received in full duplex in hex format

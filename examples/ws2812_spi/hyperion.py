@@ -79,6 +79,13 @@ class server:
           print "unknown json command: %s" % data
     return None
 
+  def duration(self, data=None):
+    d = self.json(data)
+    if d:
+      if d.has_key('duration'):
+        return d['duration']
+    return 0
+
 
 if __name__ == '__main__':
     hyp = server()
