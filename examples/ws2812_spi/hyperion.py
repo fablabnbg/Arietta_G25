@@ -55,28 +55,29 @@ class server:
     self.data = data
     return data 
 
-
-
-
-  def parse(self, data=None):
+  def json(self, data=None):
     """
      expected json format:
      {"command":"color","priority":50,"color":[99,0,28],"duration":14400000}
     """
     if data is None: data = self.data
     try:
-      d = json.loads(data)
+      j = json.loads(data)
     except Exception as e:
       if self.verbose:
           print "%s: bad json: '%s'\n" % (e, data)
       return None
+    return j
+
+  def color(self, data=None):
+    d = self.json(data)
     if d:
       if d.has_key('color'):
         return d['color']
       else:
         if self.verbose:
           print "unknown json command: %s" % data
-    None
+    return None
 
 
 if __name__ == '__main__':
@@ -87,7 +88,7 @@ if __name__ == '__main__':
 
     while 1:
 	if (hyp.poll()): 
-	  rgb = hyp.parse()
+	  rgb = hyp.color()
 	  if rgb:
 	    print "r=%d, g=%d, b=%d" % (rgb[0], rgb[1], rgb[2])
 	time.sleep(0.2)

@@ -1,11 +1,15 @@
 #!/usr/bin/python
 #
-# (c) 2014, Jürgen Weigert, juewei@fabfolk.com
+# (c) 2014, Juergen Weigert, juewei@fabfolk.com
 # Distribute under GPL-2.0 or ask.
 #
 #
 # Example program to drive 8 WS2812 RGB Leds with the SPI interface
 # of an Arietta board.
+#
+# This also understands the hyperion protocol for color changes via 
+# your android smart phone.
+#
 # Hardware wiring:
 #
 # Pin J4.8 (SPI1 MOSI) -> Pin 1 + Pin 2 of a 74HCT02, 
@@ -26,6 +30,7 @@ from ctypes import addressof, create_string_buffer, sizeof, string_at
 from fcntl import ioctl
 from spi_ctypes import *
 import time
+import hyperion
 
 nleds=8
 
@@ -59,7 +64,7 @@ class spibus():
 #Open the SPI bus 0
 spibus0 = spibus("/dev/spidev32766.1")
 
-def set_led(j, r, g, b):
+def set_led(j, rgb):
   doublebit = [ 
     # spi sends the msb first, and we invert all
     0x77, 	# 111.111.	0 0
@@ -74,7 +79,7 @@ def set_led(j, r, g, b):
   # bl = [ 0x77, 0x77, 0x77, 0x77,  0x77, 0x77, 0x77, 0x77,   0x77, 0x77, 0x77, 0x71 ]
 
   i = j * 12
-
+  r,g,b = rgb
   spibus0.write_buffer[i+ 0] = chr(doublebit[(g>>6) & 3])
   spibus0.write_buffer[i+ 1] = chr(doublebit[(g>>4) & 3])
   spibus0.write_buffer[i+ 2] = chr(doublebit[(g>>2) & 3])
@@ -102,17 +107,27 @@ rgb = [
 ]
 
 for x in range(len(rgb)):
-  set_led(x, rgb[x][0], rgb[x][1], rgb[x][2])
+  set_led(x, rgb[x])
+
+hyp = hyperion.server()
+
+blue = [0,0,255]
 
 dir=1
-x=0
+x=1
+xx=0
 while (True):
   spibus0.send(3*4*8)
-  set_led(x, rgb[x][0], rgb[x][1], rgb[x][2])
+  set_led(xx, rgb[x])
   if (x <= 0) : dir = 1
   if (x >= 7) : dir = -1
+  xx = x
   x += dir
-  set_led(x, 0,0,255)
+  set_led(x, blue)
+  if (hyp.poll()):
+    new = hyp.color()
+    if new: blue = new
+    else: print hyp.json()
   time.sleep(0.01)
 
   
