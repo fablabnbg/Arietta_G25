@@ -96,18 +96,63 @@ def set_led(j, rgb):
   spibus0.write_buffer[i+11] = chr(doublebit[(b>>0) & 3])
 
 rgb = [
- [ 0 , 1 ,  0],
- [ 1 , 1 , 10],
- [ 1 , 1 , 30],
- [ 55, 55,  0],
- [ 55, 0 ,  0],
- [ 0 , 55,  0],
- [ 55,  0, 55],
- [ 55,  0,  0],
+	[
+	  [ 0 ,  1,  0],
+	  [ 1 ,  1, 10],
+	  [ 1 ,  1, 33],
+	  [ 33, 33,  0],
+	  [ 33,  0,  0],
+	  [ 0 , 33,  0],
+	  [ 33,  0, 33],
+	  [ 33,  0,  0],
+	],
+	[
+	  [ 0,  1,  0],
+	  [ 0,  1, 20],
+	  [ 0,  1, 66],
+	  [ 0, 66,  0],
+	  [ 0,  0,  0],
+	  [ 0, 66,  0],
+	  [ 0,  0, 66],
+	  [ 0,  0,  0],
+	],
+	[
+	  [ 1 ,  0,  0],
+	  [ 10 , 0,  0],
+	  [ 40 , 0,  1],
+	  [ 100, 0,  0],
+	  [ 100, 0,  0],
+	  [ 40 , 0,  0],
+	  [ 10,  0,  0],
+	  [ 1,   0,  0],
+	],
+	[
+	  [ 0, 0,  1],
+	  [ 0, 1,  1],
+	  [ 0, 1,  0],
+	  [ 1, 1,  0],
+	  [ 1, 1,  0],
+	  [ 0, 1,  0],
+	  [ 0, 1,  1],
+	  [ 0, 0,  1],
+	],
+	[
+	  [ 0 ,  1,   0],
+	  [ 1 ,  1,  10],
+	  [ 1 ,  1, 255],
+	  [ 255, 255, 0],
+	  [ 255, 0,   0],
+	  [ 0 , 255,  0],
+	  [ 255, 0, 255],
+	  [ 255, 0,   0],
+	]
 ]
 
-for x in range(len(rgb)):
-  set_led(x, rgb[x])
+pattern=0
+top = len(rgb[pattern])
+
+for x in range(nleds):
+  set_led(x, rgb[pattern][x%top])
 
 hyp = hyperion.server()
 
@@ -117,17 +162,19 @@ dir=1
 x=1
 xx=0
 while (True):
-  spibus0.send(3*4*8)
-  set_led(xx, rgb[x])
+  spibus0.send(3*4*nleds)
+  set_led(xx, rgb[pattern][x%top])
   if (x <= 0) : dir = 1
-  if (x >= 7) : dir = -1
+  if (x >= nleds-1) : dir = -1
   xx = x
   x += dir
   set_led(x, blue)
   if (hyp.poll()):
     new = hyp.color()
     if new: blue = new
-    else: print hyp.json()
+    else: 
+      print hyp.json()
+      pattern = (pattern + 1) % len(rgb)
   time.sleep(0.01)
 
   
