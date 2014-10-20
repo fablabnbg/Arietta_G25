@@ -1,4 +1,24 @@
 #!/usr/bin/python
+#
+# (c) 2014, Jürgen Weigert, juewei@fabfolk.com
+# Distribute under GPL-2.0 or ask.
+#
+#
+# Example program to drive 8 WS2812 RGB Leds with the SPI interface
+# of an Arietta board.
+# Hardware wiring:
+#
+# Pin J4.8 (SPI1 MOSI) -> Pin 1 + Pin 2 of a 74HCT02, 
+# LED chain input is at Pin 3 of 74HTC02,
+# Pin J4.9 (GND) -> Pin 7 of 74HTC02 + GND of LED chain
+# Pin J4.1 (5V)  -> Pin 14 of 74HTC02 + 5V of LED chain.
+#
+# Kernel preparation:
+# http://www.acmesystems.it/pinout_arietta
+# -> click on SPI bus [x] SPI
+# -> [Generate acme-arietta.dtb]
+#
+# Copy the downloaded file to your SDcard, according to the online instructions.
 
 import posix
 import struct
@@ -96,10 +116,9 @@ while (True):
   time.sleep(0.01)
 
   
-
 #Shows the 2 byte received in full duplex in hex format
-print hex(ord(spibus0.read_buffer[0]))
-print hex(ord(spibus0.read_buffer[1]))
+# print hex(ord(spibus0.read_buffer[0]))
+# print hex(ord(spibus0.read_buffer[1]))
 
 
 
