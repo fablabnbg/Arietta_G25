@@ -32,9 +32,9 @@ from spi_ctypes import *
 import sys, time
 import hyperion
 
-nleds=240		# max 341
+nleds=40		# max 341
 sleeptime=0.1/nleds
-spidev="/dev/spidev32766.1"
+spidev="/dev/spidev32766.2"
 
 if (len(sys.argv) > 1):
   try:
@@ -51,6 +51,7 @@ class spibus():
 		self.read_buffer=create_string_buffer(nleds*3*4)
 
 			# speed_hz=5000000,
+			# speed_hz=3500000,  # worked once
 			# speed_hz=2550000,  # 1.6us @ 4bit per bit
 			# speed_hz=3500000,    # 1.2us @ 4bit per bit
 		self.ioctl_arg = spi_ioc_transfer(
@@ -199,6 +200,7 @@ while (True):
   xx = x
   x += dir
   set_led(x, blue)
+  print x
   if (hyp.poll()):
     new = hyp.color()
     if new: blue = new
