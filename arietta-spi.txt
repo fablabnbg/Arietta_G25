@@ -1,0 +1,70 @@
+				jw, Sun Mar  1 23:01:59 CET 2015
+
+make a kernel where spi works
+-----------------------------
+
+# The device tree generator from acme-systems works partially.
+# A dtb blob generates device nodes under /dev/spidev32766.* , 
+# userland can access the devices and the chip select lines toggle.
+# SCK and MOSI are silent.
+# 
+# PIO controller B is responsible for switching the GPIO pin PA22 from its GPIO function to
+# the special function, which is MOSI.
+
+# firefox http://www.acmesystems.it/arm9_toolchain
+
+sudo apt-get install -y emdebian-archive-keyring
+sudo apt-get install -y libc6-armel-cross libc6-dev-armel-cross
+sudo apt-get install -y binutils-arm-linux-gnueabi
+sudo apt-get install -y gcc-arm-linux-gnueabi
+sudo apt-get install -y g++-arm-linux-gnueabi
+sudo apt-get install -y u-boot-tools
+sudo apt-get install -y libncurses5-dev
+
+cat > hello.c < EOF
+#include "stdio.h"
+ 
+int main(void) {
+  printf("Hello world !\n");
+  return 0;
+}
+EOF
+
+arm-linux-gnueabi-gcc hello.c -o hello
+
+scp hello root@192.168.10.10:/root
+ssh root@192.168.10.10
+ ./hello
+  Hello World !
+ exit 0
+
+# http://www.acmesystems.it/compile_linux_3_16
+tar xvfJ linux-3.16.1.tar.xz
+cd linux-3.16.1
+( cd arch/arm/configs; wget http://www.acmesystems.it/www/compile_linux_3_16/acme-arietta_defconfig )
+make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- acme-arietta_defconfig
+make ARCH=arm menuconfig
+ -> Device Drivers
+  -> [*] SPI Support
+   -> <*> Atmel SPI
+   -> <*> User mode SPI support
+
+( cd arch/arm/boot/dts; wget http://www.acmesystems.it/www/compile_linux_3_16/acme-arietta.dts )
+vi arch/arm/boot/dts/acme-arietta.dts
+          spi1: spi@f0004000 {
+              status = "okay";
+ZZ
+make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- acme-arietta.dtb
+
+make -j8 ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- zImage
+# wait ca 5 Minutes
+ Image arch/arm/boot/zImage is ready
+
+make modules -j8 ARCH=arm CROSS_COMPILE=arm-linux-gnueabi-
+make modules_install INSTALL_MOD_PATH=./modules ARCH=arm
+
+scp arch/arm/boot/dts/acme-arietta.dtb root@192.168.10.10:/boot
+scp arch/arm/boot/zImage root@192.168.10.10:/boot
+rsync -avc modules/lib/. root@192.168.10.10:/lib/.
+
+
